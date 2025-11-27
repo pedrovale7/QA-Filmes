@@ -21,7 +21,7 @@ def pre_process_data():
     metrics = pd.concat([good_metrics, bad_metrics])
 
     df = pd.merge(metrics, movies, on='movieId', how='left')
-    df.columns = ['Id', 'Quantidade de Avaliações', 'Média das Avaliações', 'Avaliação Máxima', 'Nome do Filme', 'Gêneros']
+    df.columns = ['Id', 'Quantidade_Avaliações', 'Média_Avaliações', 'Avaliação_Máxima', 'Nome_Filme', 'Generos']
     
     tags_movie['tag'] = tags_movie['tag'].astype(str)
     tags = tags_movie.groupby('movieId')['tag'].apply(lambda x: ' '.join(x)).reset_index()
@@ -29,6 +29,6 @@ def pre_process_data():
     
     df = pd.merge(df, tags, on='Id', how='left')
 
-    df.to_csv('backend/pre_processed_movies.csv', index=False)
+    df.to_csv('back-end/pre_processed_movies.csv', index=False)
     
 pre_process_data()
