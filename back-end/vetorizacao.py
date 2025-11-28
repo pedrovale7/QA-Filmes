@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-import time
-from tqdm import tqdm
 from fastembed import TextEmbedding
 
 df = pd.read_csv('pre_processed_movies.csv')

@@ -18,32 +18,19 @@ class ChatRequest(BaseModel):
 
 @app.on_event("startup")
 def iniciar_sist():
+
     global llm
-    print("--- 🚀 TENTANDO INICIAR O SISTEMA ---")
-    
-    # 1. Verifica se a chave foi lida do arquivo .env
     if not GROQ_API_KEY:
-        print("❌ ERRO CRÍTICO: A variável GROQ_API_KEY está vazia ou None!")
-        print("   -> Verifique se o arquivo .env existe na mesma pasta.")
-        print("   -> Verifique se tem algo escrito dentro dele.")
+        print("Chave inválida para o Groq")
         return
 
-    print(f"🔑 Chave encontrada: {GROQ_API_KEY[:5]}... (oculto)")
-
     try:
-        # 2. Tenta conectar na Groq
-        print("🔌 Conectando aos servidores da Groq...")
+
+        print("Conectando aos servidores da Groq...")
         llm = Groq(model='llama-3.1-8b-instant', api_key=GROQ_API_KEY)
         
-        # 3. Teste rápido para ver se a chave funciona de verdade
-        # Fazemos uma pergunta boba só pra testar a conexão
-        teste = llm.complete("Diga oi")
-        print(f"✅ CONEXÃO BEM SUCEDIDA! O Groq respondeu: '{teste.text.strip()}'")
-        
     except Exception as e:
-        print(f"\n❌ ERRO FATAL AO CONECTAR NO GROQ:")
-        print(f"   -> {str(e)}")
-        print("   -> Verifique sua internet ou se a chave API é válida.")
+        print(f"Erro de conexão do Groq: {e}")
         llm = None
 
 @app.post("/chat")
@@ -60,15 +47,17 @@ def chat_endpoint(request: ChatRequest):
 
         for filme in respostas:
 
-            titulo = filme.get('title') or filme.get('Nome_Filme') or "N/A"
-            genero = filme.get('genres') or filme.get('Generos') or "N/A"
-            nota = filme.get('media_nota') or filme.get('Nota') or "N/A"
-            detalhes = filme.get('contexto_completo') or filme.get('Detalhes') or ""
+            titulo = filme.get('Nome_Filme') or ""
+            genero = filme.get('Generos') or ""
+            nota = filme.get('Nota') or ""
+            detalhes = filme.get('Detalhes') or ""
 
-            trecho = f"- Filme: {titulo} | Gêneros: {genero} | Nota: {nota}\n"
-            trecho += f"  Detalhes: {detalhes}\n\n"
-            
-
+            trecho = f'''
+                Filme: {titulo} \n 
+                Gêneros: {genero}\n
+                Nota: {nota}\n 
+                Detalhes: {detalhes}\n   
+                '''
             contexto += trecho
         
         prompt = f"""
