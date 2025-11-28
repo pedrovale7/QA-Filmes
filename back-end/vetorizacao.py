@@ -7,6 +7,7 @@ os.environ["HF_HUB_DISABLE_SYMLINKS"] = "1"
 dir = os.path.dirname(os.path.abspath(__file__))
 path_csv = os.path.join(dir, 'pre_processed_movies.csv')
 path_npy = os.path.join(dir, 'vetores_filmes.npy')
+
 df = pd.read_csv(path_csv)
 
 def vetorizar_texto():
