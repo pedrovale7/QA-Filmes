@@ -3,8 +3,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from llama_index.llms.groq import Groq
-
-from vetorizacao import vetorizar_texto, busca_vetorial
+from vetorizacao import busca_vetorial
+os.environ["HF_HUB_DISABLE_SYMLINKS"] = "1"
 
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")

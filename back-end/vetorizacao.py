@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
+import os
 from fastembed import TextEmbedding
+
+os.environ["HF_HUB_DISABLE_SYMLINKS"] = "1"
 
 df = pd.read_csv('pre_processed_movies.csv')
 def vetorizar_texto():
