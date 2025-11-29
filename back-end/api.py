@@ -4,13 +4,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from llama_index.llms.groq import Groq
+from llama_index.core.llms import ChatMessage, MessageRole
 from vetorizacao import busca_vetorial
+
 os.environ["HF_HUB_DISABLE_SYMLINKS"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+historico_conversas = []
 app = FastAPI(title="API Q&A Filmes")
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -27,19 +32,33 @@ class ChatRequest(BaseModel):
 @app.on_event("startup")
 def iniciar_sist():
 
-    global llm
+    global llm, historico_conversas
     if not GROQ_API_KEY:
         print("Chave inválida para o Groq")
         return
 
     try:
-
         print("Conectando aos servidores da Groq...")
-        llm = Groq(model='llama-3.1-8b-instant', api_key=GROQ_API_KEY)
-        
+        llm = Groq(model='llama-3.1-8b-instant', api_key=GROQ_API_KEY)        
     except Exception as e:
         print(f"Erro de conexão do Groq: {e}")
         llm = None
+
+    # Definição de prompt inicial no startup    
+    if not historico_conversas:
+        sys_prompt = f"""
+        Você é um especialista em filmes. Use apenas os dados de sua base de treinamento e para responder perguntas do usuário sobre sugestões de filmes.
+        Qualquer pergunta sobre qualquer outro assunto deve ser rejeitada educadamente explicando que você apenas recomenda filmes.
+        Tenha uma comunicação leve e amigável e recomende os filmes listados explicando o porque da sua desicão.
+        REGRAS DE RESPOSTA:
+        1. NÃO faça introduções longas (como "Olá", "Ótima escolha").
+        2. Limite a resposta a no máximo 2 ou 3 frases por filme.
+        3. Diga apenas: Nome do Filme + Nota + Motivo breve da recomendação.
+        4. Se houver mais de um filme, separe claramente.
+        SEU Prompt inicial deve ser: 'Olá! Estou aqui para ajudar você a encontrar o filme perfeito. Qual gênero ou tipo de filme você gostaria de assistir hoje?'
+        """
+        historico_conversas.append(ChatMessage(role=MessageRole.SYSTEM, content=sys_prompt))
+
 
 @app.post("/chat")
 def chat_endpoint(request: ChatRequest):
@@ -52,14 +71,11 @@ def chat_endpoint(request: ChatRequest):
     try:
         respostas = busca_vetorial(pergunta_usuario, top_k=5)
         contexto = "" 
-
         for filme in respostas:
-
             titulo = filme.get('Nome_Filme') or ""
             genero = filme.get('Generos') or ""
             nota = filme.get('Nota') or ""
             detalhes = filme.get('Detalhes') or ""
-
             trecho = f'''
                 Filme: {titulo} \n 
                 Gêneros: {genero}\n
@@ -67,22 +83,23 @@ def chat_endpoint(request: ChatRequest):
                 Detalhes: {detalhes}\n   
                 '''
             contexto += trecho
-        
         prompt = f"""
-        Você é um especialista em filmes. Use apenas os dados abaixo para responder perguntas do usuário sobre sugestões de filmes
-        Tenha uma comunicação leve e amigável e recomende os filmes listados explicando o porque da sua desicão.
-
-        REGRAS DE RESPOSTA:
-        1. NÃO faça introduções longas (como "Olá", "Ótima escolha").
-        2. Limite a resposta a no máximo 2 ou 3 frases por filme.
-        3. Diga apenas: Nome do Filme + Nota + Motivo breve da recomendação.
-        4. Se houver mais de um filme, separe claramente.
-
-        SISTEMA: {contexto}
-        PERGUNTA DO USUÁRIO: {pergunta_usuario}"""
+        Considere os seguintes filmes encontrados no banco de dados:
+        {contexto}
         
-        resposta = llm.complete(prompt)
+        Com base nesses filmes, responda à seguinte pergunta do usuário:
+        {pergunta_usuario}
+        """
         
-        return {"resposta": resposta.text}
+        # Adiciona mensagens anteriores ao histórico
+        msg_usuario = ChatMessage(role=MessageRole.USER, content=prompt)
+        historico_conversas.append(msg_usuario)
+
+        #resposta = llm.complete(prompt)
+        #return {"resposta": resposta.text}
+
+        resposta = llm.chat(historico_conversas)
+        historico_conversas.append(resposta.message)
+        return {"resposta": resposta.message.content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
