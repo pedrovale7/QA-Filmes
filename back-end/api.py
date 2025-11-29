@@ -55,10 +55,20 @@ def iniciar_sist():
         2. Limite a resposta a no máximo 2 ou 3 frases por filme.
         3. Diga apenas: Nome do Filme + Nota + Motivo breve da recomendação.
         4. Se houver mais de um filme, separe claramente.
-        SEU Prompt inicial deve ser: 'Olá! Estou aqui para ajudar você a encontrar o filme perfeito. Qual gênero ou tipo de filme você gostaria de assistir hoje?'
         """
         historico_conversas.append(ChatMessage(role=MessageRole.SYSTEM, content=sys_prompt))
 
+
+@app.get("/inicio")
+def iniciar_chat():
+    global historico_conversas
+    
+    # Prompt inicial de boas-vindas para direcionar experiência do usuário
+    mensagem_inicial = "Olá! Estou aqui para ajudar você a encontrar o filme perfeito. Qual gênero ou tipo de filme você gostaria de assistir hoje?"    
+    if len(historico_conversas) == 1: # Só tem o System Prompt
+        historico_conversas.append(ChatMessage(role=MessageRole.ASSISTANT, content=mensagem_inicial))
+    
+    return {"resposta": mensagem_inicial}
 
 @app.post("/chat")
 def chat_endpoint(request: ChatRequest):
@@ -103,3 +113,23 @@ def chat_endpoint(request: ChatRequest):
         return {"resposta": resposta.message.content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/limpar")
+def limpar_historico():
+    global historico_conversas, llm
+    historico_conversas = [] # Zera a lista
+    
+    # Reinicializa com o System Prompt
+    sys_prompt = f"""
+    Você é um especialista em filmes. Use apenas os dados de sua base de treinamento e para responder perguntas do usuário sobre sugestões de filmes.
+    Qualquer pergunta sobre qualquer outro assunto deve ser rejeitada educadamente explicando que você apenas recomenda filmes.
+    Tenha uma comunicação leve e amigável e recomende os filmes listados explicando o porque da sua desicão.
+    REGRAS DE RESPOSTA:
+    1. NÃO faça introduções longas (como "Olá", "Ótima escolha").
+    2. Limite a resposta a no máximo 2 ou 3 frases por filme.
+    3. Diga apenas: Nome do Filme + Nota + Motivo breve da recomendação.
+    4. Se houver mais de um filme, separe claramente.
+    """
+    historico_conversas.append(ChatMessage(role=MessageRole.SYSTEM, content=sys_prompt))
+    
+    return {"status": "Histórico limpo"}
