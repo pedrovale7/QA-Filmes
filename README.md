@@ -1,5 +1,7 @@
 # QA-Filmes
 
+![](assets/print_chat.png)
+
 ## Requisitos
 + Necessário ter npm instalado na máquina.
 + Necessário ter python e gerenciador de ambientes instalado (pyenv, conda, mamba, etc)
