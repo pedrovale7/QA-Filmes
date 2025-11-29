@@ -97,7 +97,9 @@ def chat_endpoint(request: ChatRequest):
         Considere os seguintes filmes encontrados no banco de dados:
         {contexto}
         
-        Com base nesses filmes, responda à seguinte pergunta do usuário:
+        Com base nesses filmes, responda à seguinte pergunta do usuário se, e somente se, tratar-se de uma solicitação de recomendação de filmes. Caso contrário, deve-se responder conforme orientado no prompt de sistema.
+        
+        Pergunta do usuário:
         {pergunta_usuario}
         """
         
