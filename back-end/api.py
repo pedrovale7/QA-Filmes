@@ -1,11 +1,13 @@
 import os
-from fastapi import FastAPI, HTTPException
+import pdfplumber
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from llama_index.llms.groq import Groq
 from llama_index.core.llms import ChatMessage, MessageRole
 from vetorizacao import busca_vetorial
+
 
 os.environ["HF_HUB_DISABLE_SYMLINKS"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -135,3 +137,19 @@ def limpar_historico():
     historico_conversas.append(ChatMessage(role=MessageRole.SYSTEM, content=sys_prompt))
     
     return {"status": "Histórico limpo"}
+
+@app.post("/upload_pdf")
+async def upload_pdf(file: UploadFile = File(...)):
+    if file.content_type != "application/pdf":
+        return {"resposta": "O arquivo enviado não é um PDF."}
+
+    # Lê o PDF
+    text = ""
+    with pdfplumber.open(file.file) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() or ""
+
+    if not text.strip():
+        text = "Não foi possível extrair texto do PDF."
+
+    return {"resposta": text}

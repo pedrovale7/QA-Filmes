@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+
 type ChatMessage = {
   type: 'user' | 'bot' | 'error';
   text: string;
@@ -92,6 +93,30 @@ function App() {
     }
   };
 
+  const handlePDF = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+
+    const pdf = e.target.files[0];
+    const formData = new FormData();
+    formData.append("file", pdf);
+
+    const res = await fetch("http://localhost:8000/upload_pdf", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    // Insere o texto extraído no input
+    setUserInput(data.resposta);
+
+    // E chama o handleSubmit como se fosse um envio normal:
+    handleSubmit({ preventDefault: () => {} });
+  };
+
+
+
+
   return (
     <div className="App">
       <div className="header-container" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
@@ -138,6 +163,16 @@ function App() {
           disabled={loading}
         />
         <button type="submit" disabled={loading}>Send</button>
+
+        <label className="pdf-upload-button">
+            📎
+            <input
+              type="file"
+              accept="application/pdf"
+              style={{ display: "none" }}
+              onChange={(e) => handlePDF(e)}
+            />
+        </label>
       </form>
     </div>
   );

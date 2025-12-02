@@ -7,4 +7,5 @@ tqdm==4.67.1
 uvicorn==0.38.0
 fastembed
 torch==2.9.1
-
+pdfplumber==0.11.8
+python-multipart==0.0.20
